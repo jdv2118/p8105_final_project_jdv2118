@@ -1,0 +1,122 @@
+---
+title: "Untitled"
+author: "Justin Vargas"
+date: "2022-11-28"
+output: github_document
+---
+---
+title: "p8105_nr2774"
+output: github_document
+---
+
+### Problem 1
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(janitor)
+library(viridis)
+library(dplyr)
+library(rvest)
+library(purrr)
+library(ggplot2)
+library(patchwork)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+```
+
+```{r}
+payroll_df = 
+    read_csv("data/Citywide_Payroll_Data__Fiscal_Year_.csv") |> 
+    clean_names() |>
+    filter(fiscal_year == "2022") |>
+    select(-payroll_number, -agency_start_date) |> 
+    mutate(pay_basis = recode(pay_basis, "per Annum" = "Annually"),
+           pay_basis = recode(pay_basis, "per Day" = "Daily"),
+           pay_basis = recode(pay_basis, "per Hour" = "Hourly"),
+           leave_status = leave_status_as_of_june_30,
+           total_pay = regular_gross_paid + total_ot_paid + total_other_pay) |>
+    filter(work_location_borough != "NA",work_location_borough != "OTHER") |> select(-leave_status_as_of_june_30)
+
+#Need to create a new variable for borough and possibly look into removing decimal places for salary, and check NAs in first and last name
+```
+
+```{r}
+median_total_df =
+  payroll_df %>%
+  group_by(work_location_borough) %>%
+  summarize(
+      median_total_pay = median(total_pay, na.rm = TRUE)) %>%
+        ggplot(aes(x = work_location_borough, y = median_total_pay, fill = work_location_borough)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  labs(
+    x = "County Names",
+    y = "Median Total Pay",
+    title = "The Median Total Pay By County"
+  )
+
+median_base_df =
+  payroll_df %>%
+  group_by(work_location_borough) %>%
+  summarize(
+      median_base_salary = median(base_salary, na.rm = TRUE)) %>%
+        ggplot(aes(x = work_location_borough, y = median_base_salary , fill = work_location_borough)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  labs(
+    x = "County Names",
+    y = "Median Base Salary",
+    title = "The Median Base Salary By County"
+  )
+
+mean_total_df =
+  payroll_df %>%
+  group_by(work_location_borough) %>%
+  summarize(
+      mean_total_pay = mean(total_pay, na.rm = TRUE)) %>%
+        ggplot(aes(x = work_location_borough, y = mean_total_pay, fill = work_location_borough)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  labs(
+    x = "County Names",
+    y = "Mean Total Pay",
+    title = "The Mean Total Pay By County"
+  )
+
+total_ls = table(payroll_df$leave_status)
+total_ls
+
+labels = c("Active", "Ceased", "On Leave", "On Separation Leave", "Seasonal")
+
+piepercent = round(100 * total_ls / sum(total_ls), 1)
+
+pie(total_ls, labels = paste(labels, sep = " ", piepercent, "%"),
+    main = "Leave Status Pie Chart", col = rainbow(length(total_ls)))
+legend("topright", c("Active", "Ceased", "On Leave", "On Separation Leave", "Seasonal"),cex = 1, fill = rainbow(length(total_ls)))
+
+library(plotrix)
+
+pie3D(total_ls, labels = piepercent,
+    main = "Leave Status Pie Chart", col = rainbow(length(total_ls)))
+legend("topright", c("Active", "Ceased", "On Leave", "On Separation Leave", "Seasonal"),cex = 1, fill = rainbow(length(total_ls)))
+
+
+Ls_boro = payroll_df %>%
+  group_by(work_location_borough, leave_status) %>%
+  summarise(
+    count = n())
+Ls_boro
+
+ggplot(Ls_boro, aes(x = leave_status, y = count, fill = work_location_borough)) + geom_bar(position = "dodge", stat = "identity") + labs(x = "Leave Status", y = "Count")
+
+  # visualizations Number of employees by county separated by leave status
+  # Number of agencies separated by county scatterplot Nerugi
