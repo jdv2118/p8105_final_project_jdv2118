@@ -40,7 +40,7 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 payroll_df = 
     read_csv("data/Citywide_Payroll_Data__Fiscal_Year_.csv") |> 
     clean_names() |>
-    filter(fiscal_year == "2022") |>
+    filter(fiscal_year == "2022") |> #Perhaps just  keep 2022
     select(-payroll_number, -agency_start_date) |> 
     mutate(pay_basis = recode(pay_basis, "per Annum" = "Annually"),
            pay_basis = recode(pay_basis, "per Day" = "Daily"),
@@ -49,35 +49,43 @@ payroll_df =
            total_pay = regular_gross_paid + total_ot_paid + total_other_pay) |>
     filter(work_location_borough != "NA",work_location_borough != "OTHER") |> select(-leave_status_as_of_june_30)
 
+head(payroll_df)
 #Need to create a new variable for borough and possibly look into removing decimal places for salary, and check NAs in first and last name
+#pay basis and leave status should be factor 
 ```
 
 ```{r}
+#Numbers of employees for each leave status
+
 median_total_df =
   payroll_df %>%
   group_by(work_location_borough) %>%
   summarize(
       median_total_pay = median(total_pay, na.rm = TRUE)) %>%
-        ggplot(aes(x = work_location_borough, y = median_total_pay, fill = work_location_borough)) +
+        ggplot(aes(x = reorder(work_location_borough, -median_total_pay), y = median_total_pay, fill = work_location_borough)) +
   geom_bar(position = "dodge", stat = "identity") +
   labs(
     x = "County Names",
     y = "Median Total Pay",
     title = "The Median Total Pay By County"
-  )
+  ) + coord_flip()
+
+# Change counties to a factor 
+#Arrange from lowest to highest using factors factor reorder 
 
 median_base_df =
   payroll_df %>%
   group_by(work_location_borough) %>%
   summarize(
       median_base_salary = median(base_salary, na.rm = TRUE)) %>%
-        ggplot(aes(x = work_location_borough, y = median_base_salary , fill = work_location_borough)) +
+        ggplot(aes(x = reorder(work_location_borough, -median_base_salary_, y = median_base_salary , fill = work_location_borough)) +
   geom_bar(position = "dodge", stat = "identity") +
   labs(
     x = "County Names",
     y = "Median Base Salary",
     title = "The Median Base Salary By County"
   )
+#consider plotly for the visualizations 
 
 mean_total_df =
   payroll_df %>%
@@ -114,9 +122,53 @@ Ls_boro = payroll_df %>%
   group_by(work_location_borough, leave_status) %>%
   summarise(
     count = n())
+
+  
 Ls_boro
 
 ggplot(Ls_boro, aes(x = leave_status, y = count, fill = work_location_borough)) + geom_bar(position = "dodge", stat = "identity") + labs(x = "Leave Status", y = "Count")
 
+
+
+
+
+
+Ls_boro2 = payroll_df %>%
+  group_by(work_location_borough, agency_name) %>%
+  summarise(
+    count = n()) %>% 
+  ungroup() %>% 
+  group_by(work_location_borough) %>%
+  summarise(count = n())
+
+ggplot(Ls_boro2, aes(x = work_location_borough, y = count, fill = work_location_borough)) + geom_bar(position = "dodge", stat = "identity") + labs(x = "Work Location Borough", y = "Count")
+
   # visualizations Number of employees by county separated by leave status
-  # Number of agencies separated by county scatterplot Nerugi
+  # Number of agencies separated by county scatterplot
+# number of total ot hours 
+#number of other pay
+
+
+
+
+
+
+List of things to do:
+1. Clean the data (Keep counties and government city, remove Washington) (Group)
+2. Visualizations
+-Bar Graph for mean base salary by municipality (Justin)
+-Bar Graph for number of employees by municipality separated by leave status (Varvara)
+-Boxplot for overtime pay by municipality (Nergui)
+-Boxplot for overtime hours by municipality (Nergui)
+-Boxplot for total other pay by municipality (Justin)
+-Pie Chart for the percentages and numbers of the different leave statuses (Varvara)
+(Incorprate plotly into each)
+3. Do ANOVA and Paired t-test analyses for the mean base salary by municipality (Varvara and Justin)
+4. Do the Website (Nergui)
+5. Do the Report (Group)
+6. Do the Screencast (Group)
+
+
+
+
+
