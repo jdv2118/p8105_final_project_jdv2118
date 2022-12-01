@@ -39,11 +39,11 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
              pay_basis = recode(pay_basis, "per Annum" = "Annually"),
              pay_basis = recode(pay_basis, "per Day" = "Daily"),
              pay_basis = recode(pay_basis, "per Hour" = "Hourly")) %>%
-    select(-payroll_number, -first_name, -last_name, -mid_init, -month, -day, -title_description, -leave_status_as_of_june_30) %>% 
+    select(-payroll_number, -first_name, -last_name, -mid_init, -month, -day, -title_description, -leave_status_as_of_june_30, -regular_hours, -ot_hours, -regular_gross_paid) %>% 
+  filter(total_other_pay == "NA")
       
 
 head(payroll_df)
-#Need to create a new variable for borough and possibly look into removing decimal places for salary, and check NAs in first and last name
 #pay basis and leave status should be factor 
 ```
 
