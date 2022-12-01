@@ -1,25 +1,13 @@
 ---
-title: "Untitled"
-author: "Justin Vargas"
-date: "2022-11-28"
-output: github_document
----
----
-title: "p8105_nr2774"
+title: "p8105_final_project"
 output: github_document
 ---
 
-### Problem 1
+# Loading Libraries 
 
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(janitor)
-library(viridis)
-library(dplyr)
-library(rvest)
-library(purrr)
-library(ggplot2)
-library(patchwork)
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
@@ -37,22 +25,33 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
 ```{r}
-payroll_df = 
-    read_csv("data/Citywide_Payroll_Data__Fiscal_Year_.csv") |> 
-    clean_names() |>
-    filter(fiscal_year == "2022") |> #Perhaps just  keep 2022
-    select(-payroll_number, -agency_start_date) |> 
-    mutate(pay_basis = recode(pay_basis, "per Annum" = "Annually"),
-           pay_basis = recode(pay_basis, "per Day" = "Daily"),
-           pay_basis = recode(pay_basis, "per Hour" = "Hourly"),
-           leave_status = leave_status_as_of_june_30,
-           total_pay = regular_gross_paid + total_ot_paid + total_other_pay) |>
-    filter(work_location_borough != "NA",work_location_borough != "OTHER") |> select(-leave_status_as_of_june_30)
+
+    payroll_data = 
+    read_csv("data/Citywide_Payroll_Data__Fiscal_Year_.csv") %>% 
+    clean_names() %>%
+    filter(fiscal_year == "2022",
+           work_location_borough != "NA",
+           work_location_borough != "OTHER", 
+           leave_status_as_of_june_30 != "ON SEPARATION LEAVE",
+           leave_status_as_of_june_30 != "SEASONAL") %>%
+       separate(agency_start_date, into = c("month", "day", "start_year"), convert = TRUE) %>% 
+      mutate(leave_status = leave_status_as_of_june_30,
+             pay_basis = recode(pay_basis, "per Annum" = "Annually"),
+             pay_basis = recode(pay_basis, "per Day" = "Daily"),
+             pay_basis = recode(pay_basis, "per Hour" = "Hourly")) %>%
+    select(-payroll_number, -first_name, -last_name, -mid_init, -month, -day, -title_description, -leave_status_as_of_june_30) %>% 
+      
 
 head(payroll_df)
 #Need to create a new variable for borough and possibly look into removing decimal places for salary, and check NAs in first and last name
 #pay basis and leave status should be factor 
 ```
+
+
+
+
+
+
 
 ```{r}
 #Numbers of employees for each leave status
@@ -162,6 +161,8 @@ List of things to do:
 -Boxplot for overtime hours by municipality (Nergui)
 -Boxplot for total other pay by municipality (Justin)
 -Pie Chart for the percentages and numbers of the different leave statuses (Varvara)
+-Median base salary by pay basis by county
+
 (Incorprate plotly into each)
 3. Do ANOVA and Paired t-test analyses for the mean base salary by municipality (Varvara and Justin)
 4. Do the Website (Nergui)
