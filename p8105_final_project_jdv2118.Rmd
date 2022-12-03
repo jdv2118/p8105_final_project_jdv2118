@@ -25,33 +25,85 @@ theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
 ```{r}
-
-    payroll_data = 
+payroll_data = 
     read_csv("data/Citywide_Payroll_Data__Fiscal_Year_.csv") %>% 
     clean_names() %>%
     filter(fiscal_year == "2022",
            work_location_borough != "NA",
-           work_location_borough != "OTHER", 
+           work_location_borough != "OTHER",
+           work_location_borough != "WASHINGTON DC",
            leave_status_as_of_june_30 != "ON SEPARATION LEAVE",
-           leave_status_as_of_june_30 != "SEASONAL") %>%
+           leave_status_as_of_june_30 != "SEASONAL"
+           ) %>%
        separate(agency_start_date, into = c("month", "day", "start_year"), convert = TRUE) %>% 
       mutate(leave_status = leave_status_as_of_june_30,
              pay_basis = recode(pay_basis, "per Annum" = "Annually"),
              pay_basis = recode(pay_basis, "per Day" = "Daily"),
-             pay_basis = recode(pay_basis, "per Hour" = "Hourly")) %>%
-    select(-payroll_number, -first_name, -last_name, -mid_init, -month, -day, -title_description, -leave_status_as_of_june_30, -regular_hours, -ot_hours, -regular_gross_paid) %>% 
-  filter(total_other_pay == "NA")
-      
+             pay_basis = recode(pay_basis, "per Hour" = "Hourly"),
+             county_name = work_location_borough,
+             county_name = recode(county_name, "MANHATTAN" = "NEW YORK"),
+             county_name = recode(county_name, "BROOKLYN" = "KINGS")) %>% 
+    select(-payroll_number, -first_name, -last_name, -mid_init, -month, -day, -title_description, -leave_status_as_of_june_30, -regular_hours, -ot_hours, -regular_gross_paid, -work_location_borough) %>% 
+    mutate(county_name = as.factor(county_name),
+           pay_basis = as.factor(pay_basis),
+           leave_status = as.factor(leave_status)
+           )
 
-head(payroll_df)
-#pay basis and leave status should be factor 
+head(payroll_data)
+#should agency_name be a factor?
+```
+
+# Justin's Visualizations
+
+## First Plot - Mean Base Salary By New York Counties
+```{r}
+mean_base_salary_plot =
+  payroll_data %>%
+  group_by(county_name) %>%
+  summarize(
+      mean_base_salary = mean(base_salary, na.rm = TRUE)) %>%
+        ggplot(aes(x = reorder(county_name, mean_base_salary), y = mean_base_salary, fill = county_name)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  scale_y_continuous(
+      labels = scales::comma) +
+  labs(
+    x = "County Names",
+    y = "Mean Base Salary",
+    title = "The Average Base Salary for Municipal Employees of New York State By County",
+    fill = "New York State County Names"
+  ) + 
+  theme(axis.text.x = element_text(angle = 80, vjust = 0.5, hjust = 0.50)) 
+
+mean_base_salary_plot
+```
+ 
+## Second Plot - Total Other Pay by New York Counties
+
+```{r}
+median_other_pay_plot =
+  payroll_data %>%
+        ggplot(aes(x = reorder(county_name, total_other_pay), y = total_other_pay, fill = county_name)) +
+  geom_boxplot() +
+    scale_y_continuous(
+      labels = scales::comma,
+    limits = c(-20000, 40000),
+    breaks = seq(-20000, 40000, by = 10000)) +
+  labs(
+    x = "County Names",
+    y = "Median Total Other Types of Pay",
+    title = "The Median Total Other Pay for Municipal Employees of New York State By County",
+    fill = "New York State County Names"
+  ) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5)) 
+
+median_other_pay_plot
+#Fix reordering of boxplots
 ```
 
 
 
 
-
-
+# Old Code
 
 ```{r}
 #Numbers of employees for each leave status
@@ -148,7 +200,7 @@ ggplot(Ls_boro2, aes(x = work_location_borough, y = count, fill = work_location_
 #number of other pay
 
 
-
+#Things to do
 
 
 
@@ -158,10 +210,9 @@ List of things to do:
 -Bar Graph for mean base salary by municipality (Justin)
 -Bar Graph for number of employees by municipality separated by leave status (Varvara)
 -Boxplot for overtime pay by municipality (Nergui)
--Boxplot for overtime hours by municipality (Nergui)
 -Boxplot for total other pay by municipality (Justin)
 -Pie Chart for the percentages and numbers of the different leave statuses (Varvara)
--Median base salary by pay basis by county
+-Median base salary by pay basis by county (Nergui)
 
 (Incorprate plotly into each)
 3. Do ANOVA and Paired t-test analyses for the mean base salary by municipality (Varvara and Justin)
