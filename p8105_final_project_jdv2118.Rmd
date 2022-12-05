@@ -33,8 +33,8 @@ payroll_data =
            work_location_borough != "OTHER",
            work_location_borough != "WASHINGTON DC",
            leave_status_as_of_june_30 != "ON SEPARATION LEAVE",
-           leave_status_as_of_june_30 != "SEASONAL"
-           ) %>%
+           leave_status_as_of_june_30 != "SEASONAL",
+           title_description != "NA") %>%
        separate(agency_start_date, into = c("month", "day", "start_year"), convert = TRUE) %>% 
       mutate(leave_status = leave_status_as_of_june_30,
              pay_basis = recode(pay_basis, "per Annum" = "Annually"),
@@ -42,12 +42,14 @@ payroll_data =
              pay_basis = recode(pay_basis, "per Hour" = "Hourly"),
              county_name = work_location_borough,
              county_name = recode(county_name, "MANHATTAN" = "NEW YORK"),
-             county_name = recode(county_name, "BROOKLYN" = "KINGS")) %>% 
-    select(-payroll_number, -first_name, -last_name, -mid_init, -month, -day, -title_description, -leave_status_as_of_june_30, -regular_hours, -ot_hours, -regular_gross_paid, -work_location_borough) %>% 
+             county_name = recode(county_name, "BROOKLYN" = "KINGS",
+             job_title = title_description)) %>% 
+    select(-payroll_number, -first_name, -last_name, -mid_init, -month, -day, -leave_status_as_of_june_30, -regular_hours, -ot_hours, -regular_gross_paid, -work_location_borough) %>% 
     mutate(county_name = as.factor(county_name),
            pay_basis = as.factor(pay_basis),
-           leave_status = as.factor(leave_status)
-           )
+           leave_status = as.factor(leave_status),
+           job_title = title_description) %>%
+  select(-title_description)
 
 head(payroll_data)
 #should agency_name be a factor?
@@ -98,6 +100,34 @@ median_other_pay_plot =
 
 median_other_pay_plot
 #Fix reordering of boxplots
+```
+
+
+## Third Plot - Total Number of Job Titles by New York Counties
+
+```{r}
+number_job_titles_plot =
+  payroll_data %>%
+  group_by(county_name, job_title) %>%
+  summarise(count = n()) %>%
+  ungroup() %>% 
+  group_by(county_name) %>%
+  summarise(count = n()) %>%
+        ggplot(aes(x = reorder(county_name, count), y = count, fill = county_name)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  scale_y_continuous(
+      labels = scales::comma,
+    limits = c(0, 1500),
+    breaks = seq(0, 1500, by = 250)) +
+  labs(
+    x = "County Names",
+    y = "Number of Job Titles",
+    title = "The Number of Job Titles Held By Municipal Employees of New York State By County",
+    fill = "New York State County Names"
+  ) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) 
+
+number_job_titles_plot
 ```
 
 
